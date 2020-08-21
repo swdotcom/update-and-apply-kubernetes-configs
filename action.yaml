@@ -1,0 +1,19 @@
+name: 'Update and apply kubernetes configuration files'
+description: 'Update kubernetes configuration yamls and apply them to the current cluster'
+author: 'software.com'
+inputs:
+  k8-config-file-paths:
+    description: 'Paths where the k8 configuration files are located'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Substitute variables and apply files
+      run: |
+        k8_files=(${{ inputs.k8-config-file-paths }})
+        for file in "${k8_files[@]}"; do
+          template=`cat $file | envsubst`
+          echo "$template"
+          echo "$template" | kubectl apply -f -
+        done
+      shell: bash

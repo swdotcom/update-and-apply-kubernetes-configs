@@ -1,0 +1,46 @@
+name: Test Branch
+on: push
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Can't figure out how to get minikube running on Windows Server. Skipping for now.
+        os: [macos-latest, ubuntu-latest]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install kubectl and minikube on MacOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install kubectl minikube
+      - name: Start minikube
+        run: minikube start
+      - name: update-and-apply-kubernetes-configs
+        uses: ./
+        with:
+          k8-config-file-paths: |
+            .github/workflows/k8/config.yaml
+            .github/workflows/k8/deployment.yaml
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          CHANGE_CAUSE: ${{ github.ref }}
+          SOME_CONFIG: hello
+      - name: Check deployment image
+        run: |
+          image=`kubectl get deployment my-app-deployment -o jsonpath="{..image}"`
+          if [ "$image" = "my-app:${{ github.sha }}" ]; then
+            echo "Image updated successfully"
+          else
+            echo "Image update failed"
+            exit 1
+          fi
+      - name: Check ConfigMap
+        run: |
+          value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
+          if [ "$value" = "hello" ]; then
+            echo "ConfigMap value updated successfully"
+          else
+            echo "ConfigMap value update failed"
+            exit 1
+          fi

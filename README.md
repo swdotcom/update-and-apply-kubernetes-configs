@@ -10,7 +10,7 @@ See [action.yaml](action.yaml)
 
 ## Example usage
 
-Given a deployment yaml that is committed to the codebase.
+Given kubernetes configurations that are committed to the codebase.
 
 `k8/deployment.yaml`
 ```yaml

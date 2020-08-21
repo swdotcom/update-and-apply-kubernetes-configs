@@ -1,6 +1,9 @@
 name: 'Update and apply kubernetes configuration files'
 description: 'Update kubernetes configuration yamls and apply them to the current cluster'
 author: 'software.com'
+branding:
+  icon: upload-cloud
+  color: blue
 inputs:
   k8-config-file-paths:
     description: 'Paths where the k8 configuration files are located'

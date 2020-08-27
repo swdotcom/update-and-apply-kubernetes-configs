@@ -1,3 +1,5 @@
+![Test Branch](https://github.com/swdotcom/update-and-apply-kubernetes-configs/workflows/Test%20Branch/badge.svg?branch=main)
+
 # Update and Apply Kubernetes Configurations
 
 Composite Github action to update k8 configurations with environment variables and then apply them with kubectl.
@@ -48,14 +50,14 @@ metadata:
   namespace: default
 data:
   APP_ENV: 'staging'
-  SOME_CONFIG: 'hello
+  SOME_CONFIG: 'hello'
 ```
 
-This action uses `envsubst` to replace values in form `$VARIABLE` or `${VARIABLE}` that are found in the list of configuration files. If an ENV variable is not defined for a replacement, then it will be replaced with and empty string. The k8 templates do not need to define any replacements, like the `k8/config-staging.yaml` above. It's still useful to apply these during the deployment so that configuration can be managed through git.
+This action uses `envsubst` to replace values in form `$VARIABLE` or `${VARIABLE}` that are found in the list of configuration files. If an ENV variable is not defined for a replacement, then it will be replaced with an empty string. The k8 templates do not need to define any replacements, like the `k8/config-staging.yaml` above. It's still useful to apply these during the deployment so that configuration can be managed through git.
 
 The order that you list the files for `k8-config-file-paths` is the order that they will be applied to your cluster. So, you probably want to apply any configMap updates before applying the deployment.
 
-The files will be applied to kubectl's current-context, so make sure to set it to the correct one before this action runs.
+**The files will be applied to kubectl's current-context, so make sure to set it to the correct one before this action runs.**
 
 ```yaml
 - name: Switch to staging cluster

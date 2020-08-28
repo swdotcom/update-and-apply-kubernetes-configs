@@ -1,4 +1,4 @@
-![Test Branch](https://github.com/swdotcom/update-and-apply-kubernetes-configs/workflows/Test%20Branch/badge.svg?branch=main)
+![Test Action](https://github.com/swdotcom/update-and-apply-kubernetes-configs/workflows/Test%20Action/badge.svg)
 
 # Update and Apply Kubernetes Configurations
 
@@ -53,7 +53,7 @@ data:
   SOME_CONFIG: 'hello'
 ```
 
-This action uses `envsubst` to replace values in form `$VARIABLE` or `${VARIABLE}` that are found in the list of configuration files. If an ENV variable is not defined for a replacement, then it will be replaced with an empty string. The k8 templates do not need to define any replacements, like the `k8/config-staging.yaml` above. It's still useful to apply these during the deployment so that configuration can be managed through git.
+This action uses `envsubst` to replace values in form `$VARIABLE` or `${VARIABLE}` that are found in the list of configuration files. See below for the different replacement options. The k8 templates do not need to define any replacements, like the `k8/config-staging.yaml` above. It's still useful to apply these during the deployment so that configurations can be managed through git.
 
 The order that you list the files for `k8-config-file-paths` is the order that they will be applied to your cluster. So, you probably want to apply any configMap updates before applying the deployment.
 
@@ -67,6 +67,7 @@ The order that you list the files for `k8-config-file-paths` is the order that t
     k8-config-file-paths: |
       k8/config-staging.yaml
       k8/deployment.yaml
+    replacement-method: all
   env:
     IMAGE_TAG: ${{ github.sha }}
     CHANGE_CAUSE: ${{ github.event.release.tag_name }}
@@ -80,7 +81,28 @@ Config files can also be defined on one line with a space delimiter.
 - uses: swdotcom/update-and-apply-kubernetes-configs@v1
   with:
     k8-config-file-paths: k8/config-staging.yaml k8/deployment.yaml
+    replacement-method: all
   env:
     IMAGE_TAG: ${{ github.sha }}
     CHANGE_CAUSE: ${{ github.event.release.tag_name }}
+```
+
+### Replacement Method - **all (Default)**
+Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be replaced with nothing. So, it would be best practice to wrap ENV vars in quotes to avoid errors when applying an invalid configuration to kubernetes.
+
+### Replacement Method - **defined**
+Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be unmodified.
+
+### Replacement Method - **list**
+Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If the ENV variable is not in the predefined list of replacement, it will be unmodified. This is useful for situations where you have a legitimate value that matches `$VAR` or `${VAR}` and you want it to be applied exactly as is to kubernetes.
+
+```yaml
+- uses: swdotcom/update-and-apply-kubernetes-configs@v1
+  with:
+    k8-config-file-paths: k8/config-staging.yaml k8/deployment.yaml
+    replacement-method: list
+    env-replacement-list: |
+      ONLY_ME
+  env:
+    ONLY_ME: hi
 ```

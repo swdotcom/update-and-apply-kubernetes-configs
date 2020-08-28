@@ -1,0 +1,107 @@
+name: Test Action
+on: push
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Can't figure out how to get minikube running on Windows Server. Skipping for now.
+        os: [macos-latest, ubuntu-latest]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install kubectl and minikube on MacOS
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: brew install kubectl minikube
+      - name: Start minikube
+        run: minikube start
+
+      # Default replacement option (all)
+      - name: update-and-apply-kubernetes-configs - all
+        uses: ./
+        with:
+          k8-config-file-paths: |
+            .github/workflows/k8/config.yaml
+            .github/workflows/k8/deployment.yaml
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          CHANGE_CAUSE: ${{ github.ref }}
+          SOME_CONFIG: hello
+      - name: Check deployment image
+        run: |
+          image=`kubectl get deployment my-app-deployment -o jsonpath="{..image}"`
+          if [ "$image" = "my-app:${{ github.sha }}" ]; then
+            echo "Image updated successfully"
+          else
+            echo "Image update failed"
+            exit 1
+          fi
+      - name: Check ConfigMap has empty values for undefined ENV vars
+        run: |
+          some_config_value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
+          another_config_value=`kubectl get configmaps my-app -o jsonpath="{..ANOTHER_CONFIG}"`
+          github_sha_value=`kubectl get configmaps my-app -o jsonpath="{..GITHUB_SHA}"`
+          if [ "$some_config_value" = "hello" ] && \
+             [ "$another_config_value" = "" ] && \
+             [ "$github_sha_value" = ${GITHUB_SHA} ]
+          then
+            echo "ConfigMap value updated successfully"
+          else
+            echo "ConfigMap value update failed"
+            exit 1
+          fi
+
+      # Only replace ENV from list
+      - name: update-and-apply-kubernetes-configs - list
+        uses: ./
+        with:
+          k8-config-file-paths: |
+            .github/workflows/k8/config.yaml
+            .github/workflows/k8/deployment.yaml
+          replacement-method: list
+          env-replacement-list: |
+            SOME_CONFIG
+        env:
+          SOME_CONFIG: hello
+      - name: Check ConfigMap has unmodified values for ENV vars not in list
+        run: |
+          some_config_value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
+          another_config_value=`kubectl get configmaps my-app -o jsonpath="{..ANOTHER_CONFIG}"`
+          github_sha_value=`kubectl get configmaps my-app -o jsonpath="{..GITHUB_SHA}"`
+          if [ "$some_config_value" = "hello" ] && \
+             [ "$another_config_value" = "\${ANOTHER_CONFIG}" ] && \
+             [ "$github_sha_value" = "\$GITHUB_SHA" ]
+          then
+            echo "ConfigMap value updated successfully"
+          else
+            echo "ConfigMap value update failed"
+            exit 1
+          fi
+
+      # Only replace ENV that are defined
+      - name: update-and-apply-kubernetes-configs - defined
+        uses: ./
+        with:
+          k8-config-file-paths: |
+            .github/workflows/k8/config.yaml
+            .github/workflows/k8/deployment.yaml
+          replacement-method: defined
+          env-replacement-list: |
+            SOME_CONFIG
+        env:
+          SOME_CONFIG: hello
+      - name: Check ConfigMap has unmodified values for ENV vars that are not defined
+        run: |
+          some_config_value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
+          another_config_value=`kubectl get configmaps my-app -o jsonpath="{..ANOTHER_CONFIG}"`
+          github_sha_value=`kubectl get configmaps my-app -o jsonpath="{..GITHUB_SHA}"`
+          if [ "$some_config_value" = "hello" ] && \
+             [ "$another_config_value" = "\${ANOTHER_CONFIG}" ] && \
+             [ "$github_sha_value" = ${GITHUB_SHA} ]
+          then
+            echo "ConfigMap value updated successfully"
+          else
+            echo "ConfigMap value update failed"
+            exit 1
+          fi

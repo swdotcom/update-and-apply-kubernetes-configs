@@ -5,4 +5,6 @@ metadata:
   namespace: default
 data:
   APP_ENV: 'staging'
-  SOME_CONFIG: $SOME_CONFIG
+  SOME_CONFIG: "$SOME_CONFIG"
+  ANOTHER_CONFIG: "${ANOTHER_CONFIG}"
+  GITHUB_SHA: "$GITHUB_SHA"

@@ -17,8 +17,8 @@ jobs:
       - name: Start minikube
         run: minikube start
 
-      # Default replacement option (all)
-      - name: update-and-apply-kubernetes-configs - all
+      # Default replacement option (defined)
+      - name: update-and-apply-kubernetes-configs - defined
         uses: ./
         with:
           k8-config-file-paths: |
@@ -37,13 +37,13 @@ jobs:
             echo "Image update failed"
             exit 1
           fi
-      - name: Check ConfigMap has empty values for undefined ENV vars
+      - name: Check ConfigMap has unmodified values for ENV vars that are not defined
         run: |
           some_config_value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
           another_config_value=`kubectl get configmaps my-app -o jsonpath="{..ANOTHER_CONFIG}"`
           github_sha_value=`kubectl get configmaps my-app -o jsonpath="{..GITHUB_SHA}"`
           if [ "$some_config_value" = "hello" ] && \
-             [ "$another_config_value" = "" ] && \
+             [ "$another_config_value" = "\${ANOTHER_CONFIG}" ] && \
              [ "$github_sha_value" = ${GITHUB_SHA} ]
           then
             echo "ConfigMap value updated successfully"
@@ -56,9 +56,7 @@ jobs:
       - name: update-and-apply-kubernetes-configs - list
         uses: ./
         with:
-          k8-config-file-paths: |
-            .github/workflows/k8/config.yaml
-            .github/workflows/k8/deployment.yaml
+          k8-config-file-paths: .github/workflows/k8/config.yaml
           replacement-method: list
           env-replacement-list: |
             SOME_CONFIG
@@ -79,25 +77,22 @@ jobs:
             exit 1
           fi
 
-      # Only replace ENV that are defined
-      - name: update-and-apply-kubernetes-configs - defined
+      # Replace all $ENV vars
+      - name: update-and-apply-kubernetes-configs - all
         uses: ./
         with:
-          k8-config-file-paths: |
-            .github/workflows/k8/config.yaml
-            .github/workflows/k8/deployment.yaml
-          replacement-method: defined
-          env-replacement-list: |
-            SOME_CONFIG
+          k8-config-file-paths: .github/workflows/k8/config.yaml
+          replacement-method: all
         env:
+          IMAGE_TAG: ${{ github.sha }}
           SOME_CONFIG: hello
-      - name: Check ConfigMap has unmodified values for ENV vars that are not defined
+      - name: Check ConfigMap has empty values for undefined ENV vars
         run: |
           some_config_value=`kubectl get configmaps my-app -o jsonpath="{..SOME_CONFIG}"`
           another_config_value=`kubectl get configmaps my-app -o jsonpath="{..ANOTHER_CONFIG}"`
           github_sha_value=`kubectl get configmaps my-app -o jsonpath="{..GITHUB_SHA}"`
           if [ "$some_config_value" = "hello" ] && \
-             [ "$another_config_value" = "\${ANOTHER_CONFIG}" ] && \
+             [ "$another_config_value" = "" ] && \
              [ "$github_sha_value" = ${GITHUB_SHA} ]
           then
             echo "ConfigMap value updated successfully"

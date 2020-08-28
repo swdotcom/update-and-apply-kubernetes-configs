@@ -67,7 +67,7 @@ The order that you list the files for `k8-config-file-paths` is the order that t
     k8-config-file-paths: |
       k8/config-staging.yaml
       k8/deployment.yaml
-    replacement-method: all
+    replacement-method: defined
   env:
     IMAGE_TAG: ${{ github.sha }}
     CHANGE_CAUSE: ${{ github.event.release.tag_name }}
@@ -81,16 +81,13 @@ Config files can also be defined on one line with a space delimiter.
 - uses: swdotcom/update-and-apply-kubernetes-configs@v1
   with:
     k8-config-file-paths: k8/config-staging.yaml k8/deployment.yaml
-    replacement-method: all
+    replacement-method: defined
   env:
     IMAGE_TAG: ${{ github.sha }}
     CHANGE_CAUSE: ${{ github.event.release.tag_name }}
 ```
 
-### Replacement Method - **all (Default)**
-Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be replaced with nothing. So, it would be best practice to wrap ENV vars in quotes to avoid errors when applying an invalid configuration to kubernetes.
-
-### Replacement Method - **defined**
+### Replacement Method - **defined (Default)**
 Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be unmodified.
 
 ### Replacement Method - **list**
@@ -106,3 +103,6 @@ Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a
   env:
     ONLY_ME: hi
 ```
+
+### Replacement Method - **all**
+Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be replaced with nothing. So, it would be best practice to wrap ENV vars in quotes to avoid errors when applying an invalid configuration to kubernetes.

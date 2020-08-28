@@ -8,14 +8,31 @@ inputs:
   k8-config-file-paths:
     description: 'Paths where the k8 configuration files are located'
     required: true
+  replacement-method:
+    description: 'Type of ENV variable replacement.(all, defined, list)'
+    required: false
+    default: 'all'
+  env-replacement-list:
+    description: 'List of ENV variable names to replace. Only required when using replacement method of list'
+    required: false
+    default: ''
 runs:
   using: 'composite'
   steps:
     - name: Substitute variables and apply files
       run: |
+        envsubst_arg=''
+        if [ ${{ inputs.replacement-method }} = "list" ]; then
+          list=(${{ inputs.env-replacement-list }})
+          for env in "${list[@]}"; do
+            envsubst_arg+="\${$env}"
+          done
+        elif [ ${{ inputs.replacement-method }} = "defined" ]; then
+          envsubst_arg="$(perl -e 'print "\$$_" for grep /^[_a-zA-Z]\w*$/, keys %ENV')"
+        fi
         k8_files=(${{ inputs.k8-config-file-paths }})
         for file in "${k8_files[@]}"; do
-          template=`cat $file | envsubst`
+          template=`cat $file | envsubst $envsubst_arg`
           echo "$template"
           echo "$template" | kubectl apply -f -
         done

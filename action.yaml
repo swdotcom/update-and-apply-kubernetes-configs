@@ -16,9 +16,23 @@ inputs:
     description: 'List of ENV variable names to replace. Only required when using replacement method of list'
     required: false
     default: ''
+  namespace:
+    description: Namespace to apply the resources. Note that this will only take effect if the yaml does not set a namespace.
+    required: false
+    default: 'default'
 runs:
   using: 'composite'
   steps:
+    - name: Get current namespace
+      id: get-original-namespace
+      run: |
+        current_namespace=$(kubectl config view --minify -o jsonpath="{..namespace}")
+        current_namespace=${current_namespace:-"default"}
+        echo "::set-output name=namespace::$current_namespace"
+      shell: bash
+    - name: Set namespace
+      run: kubectl config set-context --current --namespace ${{ inputs.namespace }}
+      shell: bash
     - name: Substitute variables and apply files
       run: |
         envsubst_arg=''
@@ -36,4 +50,7 @@ runs:
           echo "$template"
           echo "$template" | kubectl apply -f -
         done
+      shell: bash
+    - name: Set namespace to original value
+      run: kubectl config set-context --current --namespace ${{ steps.get-original-namespace.outputs.namespace }}
       shell: bash

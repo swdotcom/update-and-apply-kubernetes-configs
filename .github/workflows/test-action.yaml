@@ -100,3 +100,25 @@ jobs:
             echo "ConfigMap value update failed"
             exit 1
           fi
+
+      # Namespace
+      - name: Create namespace
+        run: kubectl create ns custom-namespace
+      - name: update-and-apply-kubernetes-configs - namespace
+        uses: ./
+        with:
+          namespace: custom-namespace
+          k8-config-file-paths: |
+            .github/workflows/k8/config.yaml
+        env:
+          SOME_CONFIG: hello
+      - name: Check ConfigMap is in the correct namespace
+        run: |
+          namespace=`kubectl get configmaps my-app -n custom-namespace -o jsonpath="{..namespace}"`
+          if [ "$namespace" = "custom-namespace" ]
+          then
+            echo "ConfigMap created in correct namespace"
+          else
+            echo "ConfigMap created in wrong namespace"
+            exit 1
+          fi

@@ -106,3 +106,25 @@ Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a
 
 ### Replacement Method - **all**
 Any value matching the format `$VARIABLE` or `${VARIABLE}` will be replaced by a matching ENV variable. If no ENV variable is defined with that name, it will be replaced with nothing. So, it would be best practice to wrap ENV vars in quotes to avoid errors when applying an invalid configuration to kubernetes.
+
+## Applying Resources to a Namespace
+
+The `namespace` option allows you to apply the list of files to a specific namespace. This is useful when you need to apply a shared configMap to multiple namespaces. Your k8 resource definition must not have a namespace specified for this to work. If a namespace is specified in your file, then it will take precedence. Once this action completes, the namespace will be returned to the original namespace if it was set, otherwise will be returned to `default`.
+
+```yaml
+- uses: swdotcom/update-and-apply-kubernetes-configs@v1
+  with:
+    namespace: custom-namespace
+    k8-config-file-paths: k8/config-staging.yaml
+```
+
+`k8/config-staging.yaml`
+```yaml
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: my-app
+data:
+  APP_ENV: 'staging'
+  SOME_CONFIG: 'hello'
+```

@@ -28,7 +28,7 @@ runs:
       run: |
         current_namespace=$(kubectl config view --minify -o jsonpath="{..namespace}")
         current_namespace=${current_namespace:-"default"}
-        echo "::set-output name=namespace::$current_namespace"
+        echo "namespace=$current_namespace" >> $GITHUB_OUTPUT
       shell: bash
     - name: Set namespace
       run: kubectl config set-context --current --namespace ${{ inputs.namespace }}
